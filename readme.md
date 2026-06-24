@@ -1,143 +1,160 @@
-# Log Archive Tool
+# Nginx Log Analyzer
 
-A simple command-line utility for archiving log directories by compressing them into timestamped `.tar.gz` files. This helps keep systems clean while preserving historical logs for future reference.
+## Overview
 
-## URL
+This project is a simple Bash script that analyzes an Nginx access log file and displays:
 
-https://roadmap.sh/projects/log-archive-tool
+* Top 5 IP addresses with the most requests
+* Top 5 most requested paths
+* Top 5 response status codes
+* Top 5 user agents
 
+The script uses standard Linux command-line utilities such as:
 
-## Features
-
-- Archive any log directory from the command line
-- Compress logs into `.tar.gz` format
-- Store archives in a dedicated directory
-- Generate unique archive names using timestamps
-- Record archive activity in a log file
-- Easy to automate with cron jobs
+* awk
+* sort
+* uniq
+* head
 
 ## Requirements
 
-- Linux/macOS or any Unix-like operating system
-- Bash shell
-- `tar` utility installed
+* Linux/macOS terminal
+* Bash shell
+* Nginx access log file
 
-## Installation
-
-1. Clone or download the project.
-
-2. Create the script file:
-
-   ```bash
-   touch log-archive
-   ```
-
-3. Paste the script contents into `log-archive`.
-
-4. Make the script executable:
-
-   ```bash
-   chmod +x log-archive
-   ```
-
-## Usage
-
-Run the tool and provide the log directory as an argument:
-
-```bash
-./log-archive <log-directory>
-```
-
-### Example
-
-Archive the system logs directory:
-
-```bash
-./log-archive /var/log
-```
-
-Example output:
-
-```text
-Archive created: ./archives/logs_archive_20240816_100648.tar.gz
-```
-
-## Project Structure
-
-After running the tool, the project structure will look like:
+## Project Files
 
 ```text
 .
-├── log-archive
-├── archive.log
-└── archives
-    └── logs_archive_20240816_100648.tar.gz
+├── log_analyzer.sh
+├── access.log
+└── README.md
 ```
 
-## Archive Naming Convention
+## Usage
 
-Archives are created using the following format:
-
-```text
-logs_archive_YYYYMMDD_HHMMSS.tar.gz
-```
-
-Example:
-
-```text
-logs_archive_20240816_100648.tar.gz
-```
-
-## Logging
-
-Every successful archive operation is recorded in `archive.log`.
-
-Example:
-
-```text
-2024-08-16 10:06:48 - Archived /var/log -> ./archives/logs_archive_20240816_100648.tar.gz
-```
-
-## Error Handling
-
-The script validates:
-
-- A log directory argument is provided
-- The specified directory exists
-- The archive is successfully created
-
-If an error occurs, an appropriate message is displayed and the script exits.
-
-## Automation with Cron
-
-To run the archive automatically every day at 2:00 AM:
-
-Open your crontab:
+Make the script executable:
 
 ```bash
-crontab -e
+chmod +x log_analyzer.sh
 ```
 
-Add the following entry:
+Run the script:
 
-```cron
-0 2 * * * /path/to/log-archive /var/log
+```bash
+./log_analyzer.sh access.log
 ```
 
-Replace `/path/to/log-archive` with the full path to your script.
+## Example Output
 
-## Future Improvements
+```text
+Top 5 IP addresses with the most requests:
+45.76.135.253 - 1000 requests
+142.93.143.8 - 600 requests
+178.128.94.113 - 50 requests
+43.224.43.187 - 30 requests
+178.128.94.113 - 20 requests
 
-Possible enhancements include:
+Top 5 most requested paths:
+/api/v1/users - 1000 requests
+/api/v1/products - 600 requests
+/api/v1/orders - 50 requests
+/api/v1/payments - 30 requests
+/api/v1/reviews - 20 requests
 
-- Automatically remove logs after archiving
-- Archive only logs older than a specified number of days
-- Send email notifications after successful archives
-- Upload archives to a remote server
-- Upload archives to cloud storage services (AWS S3, Google Cloud Storage, Azure Blob Storage)
-- Add configurable archive destinations
-- Add archive retention policies
+Top 5 response status codes:
+200 - 1000 requests
+404 - 600 requests
+500 - 50 requests
+401 - 30 requests
+304 - 20 requests
+
+Top 5 user agents:
+Mozilla/5.0 (...) - 500 requests
+curl/7.68.0 - 300 requests
+PostmanRuntime/7.29.0 - 200 requests
+Python-requests/2.28.1 - 150 requests
+Go-http-client/1.1 - 100 requests
+```
+
+## How It Works
+
+### Top IP Addresses
+
+Extracts the first field (IP address):
+
+```bash
+awk '{print $1}'
+```
+
+Counts occurrences:
+
+```bash
+sort | uniq -c | sort -rn
+```
+
+### Top Requested Paths
+
+Extracts the HTTP request field:
+
+```bash
+awk -F'"' '{print $2}'
+```
+
+Extracts only the path:
+
+```bash
+awk '{print $2}'
+```
+
+### Top Status Codes
+
+Extracts the HTTP status code:
+
+```bash
+awk '{print $9}'
+```
+
+### Top User Agents
+
+Extracts the user-agent string:
+
+```bash
+awk -F'"' '{print $6}'
+```
+
+## Alternative Solution (Without awk)
+
+Example for counting IP addresses using grep, cut, and sort:
+
+```bash
+cut -d' ' -f1 access.log \
+| sort \
+| uniq -c \
+| sort -rn \
+| head -5
+```
+
+Example for extracting status codes:
+
+```bash
+grep -o '" [0-9][0-9][0-9] ' access.log \
+| tr -d '"' \
+| sort \
+| uniq -c \
+| sort -rn \
+| head -5
+```
+
+## Stretch Goal Ideas
+
+* Accept the number of results as a parameter.
+* Export results to a file.
+* Display percentages.
+* Add support for compressed logs (.gz).
+* Generate CSV reports.
+* Create charts using gnuplot.
 
 ## License
 
-This project is open source and available under the MIT License.
+This project is for educational purposes.
